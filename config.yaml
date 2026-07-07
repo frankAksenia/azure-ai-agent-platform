@@ -1,0 +1,26 @@
+content_safety:
+  # SEVERITY THRESHOLD: Numbers from 0 (safe) to 6 (extremely harmful)
+  severity_threshold: 1
+  # SAFE DEFAULT MESSAGE: Returned when Content Safety blocks output
+  safe_response: "I cannot generate a response to that question due to content safety concerns."
+
+# Token limit for system instructions (reserve room for conversation)
+system_instruction:
+  max_tokens: 4000
+
+intent_classifier:
+  max_tokens: 50
+  temperature: 0
+  top_p: 0.1
+
+llm:
+  max_past_messages: 10
+  max_tokens: 150
+  temperature: 0.5
+  top_p: 0.5
+
+slm:
+  max_past_messages: 5
+  max_tokens: 250
+  temperature: 0.25
+  top_p: 0.25

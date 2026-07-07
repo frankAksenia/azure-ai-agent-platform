@@ -1,0 +1,24 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python Debugger: AI-103 Walkthrough",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/app/main.py",
+      "console": "integratedTerminal",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "env": {
+        "AZURE_OPENAI_ENDPOINT": "https://fndry-generalagent-dev.openai.azure.com/openai/v1",
+        "AZURE_OPENAI_LLM_DEPLOYMENT_NAME": "gpt-4.1-mini",
+        "AZURE_OPENAI_SLM_DEPLOYMENT_NAME": "Phi-4-mini-instruct",
+        "CONTENT_SAFETY_ENDPOINT": "https://fndry-generalagent-dev-content-safety.cognitiveservices.azure.com/",
+        "USER_NAME": "Ksenia Frank",
+        "USER_ROLE": "Customer"
+      }
+    }
+  ]
+}
