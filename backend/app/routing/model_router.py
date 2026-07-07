@@ -3,7 +3,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 class ModelRouter:
     def __init__(
         self,
@@ -18,13 +17,14 @@ class ModelRouter:
         self.slm_deployment = slm_deployment
 
     def route(self, user_question: str, messages: list[dict], config: dict):
-        logger.info(f"Classifying intent for user question.")
+        logger.info("Classifying intent for user question.")
 
         intent = self.intent_classifier.classify(
             user_question,
             config["intent_classifier"]["max_tokens"],
             config["intent_classifier"]["temperature"],
-            config["intent_classifier"]["top_p"]
+            config["intent_classifier"]["top_p"],
+            config["intent_classifier"].get("timeout_seconds", 15.0)
         )
 
         if intent == "simple":
@@ -41,18 +41,36 @@ class ModelRouter:
 
         messages = messages[-model_config["max_past_messages"]:]
 
+        timeout_seconds = model_config.get("timeout_seconds", 30.0)
         start_time = time.time()
+
+        logger.info(
+            "Sending chat completion request: deployment=%s, model_name=%s, message_count=%s, max_tokens=%s, timeout_seconds=%s",
+            deployment,
+            model_name,
+            len(messages),
+            model_config["max_tokens"],
+            timeout_seconds,
+        )
 
         response = self.client.chat.completions.create(
             model=deployment,
             messages=messages,
             max_tokens=model_config["max_tokens"],
             temperature=model_config["temperature"],
-            top_p=model_config["top_p"]
+            top_p=model_config["top_p"],
+            timeout=timeout_seconds,
         )
 
         latency_ms = (time.time() - start_time) * 1000
         reply = response.choices[0].message.content
+
+        logger.info(
+            "Chat completion completed: deployment=%s, model_name=%s, latency_ms=%s",
+            deployment,
+            model_name,
+            round(latency_ms, 2),
+        )
 
         token_usage = None
         if hasattr(response, "usage") and response.usage:

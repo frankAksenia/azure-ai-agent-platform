@@ -14,6 +14,7 @@ resource contentSafety 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
   properties: {
     customSubDomainName: contentSafetyName
     disableLocalAuth: true
+    publicNetworkAccess: 'Enabled'
   }
 }
 

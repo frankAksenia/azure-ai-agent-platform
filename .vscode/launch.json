@@ -5,7 +5,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python Debugger: AI-103 Walkthrough",
+      "name": "Python Debugger: Azure project",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/backend/app/main.py",
@@ -15,6 +15,9 @@
         "AZURE_OPENAI_ENDPOINT": "https://fndry-generalagent-dev.openai.azure.com/openai/v1",
         "AZURE_OPENAI_LLM_DEPLOYMENT_NAME": "gpt-4.1-mini",
         "AZURE_OPENAI_SLM_DEPLOYMENT_NAME": "Phi-4-mini-instruct",
+        "EMBEDDING_MODEL_DEPLOYMENT_NAME": "text-embedding-3-small",
+        "AI_SEARCH_ENDPOINT": "https://fndry-generalagent-dev-search.search.windows.net",
+        "AI_SEARCH_INDEX_NAME": "search-index",
         "CONTENT_SAFETY_ENDPOINT": "https://fndry-generalagent-dev-content-safety.cognitiveservices.azure.com/",
         "USER_NAME": "Ksenia Frank",
         "USER_ROLE": "Customer"

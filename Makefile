@@ -88,7 +88,7 @@ outputs:
 		--resource-group $(RESOURCE_GROUP) \
 		--name $(DEPLOYMENT_NAME) \
 		--query properties.outputs \
-		--output table
+		--output json
 
 
 # ----------------------------------------------------------
