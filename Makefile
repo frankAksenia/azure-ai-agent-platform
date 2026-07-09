@@ -128,3 +128,7 @@ purge:
 		--location $(LOCATION) \
 		--resource-group $(RESOURCE_GROUP) \
 		--name $(AI_FOUNDRY_NAME)
+	az cognitiveservices account purge \
+	--location $(LOCATION) \
+	--resource-group $(RESOURCE_GROUP) \
+	--name fndry-generalagent-dev-content-safety

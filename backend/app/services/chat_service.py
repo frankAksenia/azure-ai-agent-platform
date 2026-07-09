@@ -1,4 +1,5 @@
 import logging
+from tools.tool_registry import ToolRegistry
 from prompts.prompt_builder import build_system_instruction, build_user_message
 from tokens.token_counter import count_tokens, truncate_system_instruction
 from core.settings import USER_NAME, USER_ROLE
@@ -17,6 +18,13 @@ class ChatService:
         user_message_content: str,
         session_state: str | None = None,
     ):
+        logger.info("Starting chat session", extra={"session_state": session_state})
+
+        logger.info("Retrieving available tools from the tool registry.")
+
+        tools = ToolRegistry().get_available_tools()
+
+        logger.info("Available tools:", extra={"tools": tools})
 
         grounding_results = self.retriever.retrieve(
             question=user_message_content,
@@ -27,7 +35,7 @@ class ChatService:
             user_name=USER_NAME,
             user_role=USER_ROLE,
             session_state=session_state,
-            grounding_results=grounding_results
+            grounding_results=None # grounding_results
         )
 
         token_count = count_tokens(system_instruction)
@@ -61,6 +69,7 @@ class ChatService:
         response, latency_ms, token_usage, model_name = self.model_router.route(
             user_question=user_message_content,
             messages=messages,
+            tools=tools,
             config=self.config
         )
 

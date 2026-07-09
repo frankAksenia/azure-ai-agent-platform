@@ -1,7 +1,9 @@
+import json
 import time
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 class ModelRouter:
     def __init__(
@@ -16,7 +18,7 @@ class ModelRouter:
         self.llm_deployment = llm_deployment
         self.slm_deployment = slm_deployment
 
-    def route(self, user_question: str, messages: list[dict], config: dict):
+    def route(self, user_question: str, messages: list[dict], tools: list[dict], config: dict):
         logger.info("Classifying intent for user question.")
 
         intent = self.intent_classifier.classify(
@@ -53,14 +55,24 @@ class ModelRouter:
             timeout_seconds,
         )
 
-        response = self.client.chat.completions.create(
-            model=deployment,
-            messages=messages,
-            max_tokens=model_config["max_tokens"],
-            temperature=model_config["temperature"],
-            top_p=model_config["top_p"],
-            timeout=timeout_seconds,
-        )
+        if intent == "simple":
+            response = self.client.chat.completions.create(
+                model=deployment,
+                messages=messages,
+                max_tokens=model_config["max_tokens"],
+                temperature=model_config["temperature"],
+                top_p=model_config["top_p"],
+                timeout=timeout_seconds,
+            )
+        else:
+            response = self._call_llm_with_tools(
+                model_deployment_name=deployment,
+                messages=messages,
+                max_tokens=model_config["max_tokens"],
+                temperature=model_config["temperature"],
+                top_p=model_config["top_p"],
+                tools=tools,
+            )
 
         latency_ms = (time.time() - start_time) * 1000
         reply = response.choices[0].message.content
@@ -81,3 +93,73 @@ class ModelRouter:
             }
 
         return reply, latency_ms, token_usage, model_name
+
+    def _call_llm_with_tools(
+        self,
+        model_deployment_name: str,
+        messages: list[dict],
+        max_tokens: int,
+        temperature: float,
+        top_p: float,
+        tools: list[dict],
+    ):
+        logger.info("Calling model with tools", extra={
+                    "model": model_deployment_name, "tool_count": len(tools)},)
+
+        start_time = time.time()
+
+        response = self.openai_client.chat.completions.create(
+            model=model_deployment_name,
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            top_p=top_p,
+            tools=tools,
+            tool_choice="auto",  # optional, can be "auto" or "manual"
+        )
+
+        latency_ms = (time.time() - start_time) * 1000
+        reply = response.choices[0].message
+
+        logger.info("Model call completed", extra={
+                    "model": model_deployment_name, "latency_ms": latency_ms},)
+
+        if not reply.tool_calls:
+            logger.info("Model responded without tool calls")
+            return response
+
+        logger.info("Model requested tool calls", extra={
+                    "tool_call_count": len(reply.tool_calls)},)
+
+        messages.append(reply)
+
+        for tool_call in reply.tool_calls:
+            tool_name = tool_call.function.name
+            tool_arguments = json.loads(tool_call.function.arguments)
+
+            tool_result = self.tool_registry.run_tool(
+                tool_name=tool_name,
+                arguments=tool_arguments,
+            )
+
+            messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": str(tool_result),
+                }
+            )
+
+            logger.info("Tool executed", extra={"tool_name": tool_name})
+
+        final_response = self.openai_client.chat.completions.create(
+            model=model_deployment_name,
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            top_p=top_p,
+        )
+
+        logger.info("Model generated final answer after tool execution")
+
+        return final_response

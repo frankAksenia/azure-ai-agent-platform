@@ -28,15 +28,25 @@ class IntentClassifier:
 
         messages = [
             {
-                "role": "system",
-                "content": """
-            Classify the user prompt as either "simple" or "complex".
-            Respond with only one word: simple or complex.
-            """
-            },
-            {
                 "role": "user",
-                "content": user_question
+                "content": f"""
+Classify the following user prompt as exactly one of these labels:
+
+simple
+complex
+
+Return only the label. No greeting. No punctuation. No explanation.
+
+simple = greeting, thanks, short factual/support question, or low-risk request.
+complex = refund, complaint, account/order-specific issue, multi-step request, policy reasoning, or anything requiring grounded records.
+
+If unsure, return complex.
+
+User prompt:
+{user_question}
+
+Label:
+"""
             }
         ]
 
@@ -49,18 +59,23 @@ class IntentClassifier:
             timeout=timeout_seconds,
         )
 
-        classification = response.choices[0].message.content.strip().lower()
+        raw_classification = response.choices[0].message.content.strip().lower()
+        classification = raw_classification.strip("\"'`.,:; ")
         latency_ms = (time.time() - start_time) * 1000
 
         logger.info(
-            "Intent classification completed: deployment=%s, classification=%s, latency_ms=%s",
+            "Intent classification completed: deployment=%s, raw_classification=%s, parsed_classification=%s, latency_ms=%s",
             self.deployment_name,
+            raw_classification,
             classification,
             round(latency_ms, 2),
         )
 
-        if classification not in ["simple", "complex"]:
-            logger.warning("Unexpected classification: %s", classification)
+        if classification.startswith("simple"):
+            return "simple"
+
+        if classification.startswith("complex"):
             return "complex"
 
-        return classification
+        logger.warning("Unexpected classification: %s", raw_classification)
+        return "complex"

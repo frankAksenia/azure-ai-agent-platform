@@ -17,7 +17,6 @@ from azure.search.documents.indexes.models import (
 
 logger = logging.getLogger(__name__)
 
-
 def create_index(index_client, index_name):
     logger.info(f"Creating index '{index_name}'...")
 

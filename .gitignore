@@ -52,7 +52,6 @@ azureProfile.json
 
 # IDEs and editors
 .vscode/*
-!.vscode/launch.json
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/extensions.json

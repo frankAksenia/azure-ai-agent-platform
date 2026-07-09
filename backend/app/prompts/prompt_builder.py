@@ -38,7 +38,7 @@ You are helping a user named {user_name} who has the role of {user_role}.
 
     sections.append("""
 [TOOL INSTRUCTIONS]
-- Relevant Azure AI Search grounding results are provided in this prompt when available.
+- Relevant grounding results are provided in this prompt when available.
 - For refund questions, ask for the order number if it is missing.
 - Escalate to a human when the issue cannot be resolved from the available context.
 """)
@@ -51,7 +51,7 @@ Current conversation state: {session_state}
 
     if grounding_results:
         sections.append(f"""
-[GROUNDING SOURCES FROM AZURE AI SEARCH]
+[GROUNDING SOURCES]
 {grounding_results}
 """)
 
