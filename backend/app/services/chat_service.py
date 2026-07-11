@@ -1,5 +1,4 @@
 import logging
-from tools.tool_registry import ToolRegistry
 from prompts.prompt_builder import build_system_instruction, build_user_message
 from tokens.token_counter import count_tokens, truncate_system_instruction
 from core.settings import USER_NAME, USER_ROLE
@@ -13,16 +12,12 @@ class ChatService:
         self.retriever = retriever
         self.config = config
 
-    def chat(
-        self,
-        user_message_content: str,
-        session_state: str | None = None,
-    ):
+    async def chat(self, user_message_content: str, session_state: str | None = None):
         logger.info("Starting chat session", extra={"session_state": session_state})
 
-        logger.info("Retrieving available tools from the tool registry.")
+        logger.info("Retrieving available tools from the model router.")
 
-        tools = ToolRegistry().get_available_tools()
+        tools = self.model_router.get_available_tools()
 
         logger.info("Available tools:", extra={"tools": tools})
 
@@ -66,12 +61,21 @@ class ChatService:
             }
         ]
 
-        response, latency_ms, token_usage, model_name = self.model_router.route(
-            user_question=user_message_content,
-            messages=messages,
-            tools=tools,
-            config=self.config
+
+        response, latency_ms, token_usage, model_name = (
+            await self.model_router.route(
+                user_question=user_message_content,
+                messages=messages,
+                config=self.config,
+            )
         )
+
+        if not response.strip():
+            logger.warning("Model returned an empty response", extra={"model": model_name})
+            response = (
+                "The model returned an empty response. Check the model finish "
+                "reason and token budget in the logs."
+            )
 
         if not self.safety_service.is_text_safe(response):
             logger.info("Blocked: Model response contains unsafe content.")

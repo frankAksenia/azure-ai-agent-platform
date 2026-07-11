@@ -1,12 +1,7 @@
 import logging
 import requests
 
-from config.config import load_config
-
 logger = logging.getLogger(__name__)
-
-config = load_config()
-
 
 class ExchangeRateTool:
     name = "get_exchange_rate"
@@ -14,30 +9,25 @@ class ExchangeRateTool:
     description = "Get the exchange rate between two currencies."
 
     parameters = {
-        "type": "function",
-        "function": {
-            "name": "get_exchange_rate",
-            "description": "Get the exchange rate between two currencies.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "from_currency": {
-                        "type": "string",
-                        "description": "Source currency code, for example EUR",
-                    },
-                    "to_currency": {
-                        "type": "string",
-                        "description": "Target currency code, for example USD",
-                    },
-                },
-                "required": ["from_currency", "to_currency", "amount"],
+        "type": "object",
+        "properties": {
+            "from_currency": {
+                "type": "string",
+                "description": "Source currency code, for example EUR.",
             },
-        }
+            "to_currency": {
+                "type": "string",
+                "description": "Target currency code, for example USD.",
+            },
+        },
+        "required": ["from_currency", "to_currency"],
+        "additionalProperties": False,
     }
 
-    def __init__(self, exchange_rate_api_url: str, api_key: str):
+    def __init__(self, exchange_rate_api_url: str, api_key: str, config: dict):
         self.exchange_rate_api_url = exchange_rate_api_url
         self.api_key = api_key
+        self.config = config
 
     def run(self, from_currency: str, to_currency: str) -> str:
         from_currency = from_currency.upper()
@@ -50,13 +40,13 @@ class ExchangeRateTool:
 
         last_error = None
 
-        for attempt in range(config["tool_calls"]["max_retries"]):
+        for attempt in range(self.config["tool_calls"]["max_retries"]):
             logger.info(
                 f"Attempt {attempt + 1} to get exchange rate from {from_currency} to {to_currency}")
 
             try:
                 response = requests.get(
-                    url, timeout=config["tool_calls"]["timeout"],)
+                    url, timeout=self.config["tool_calls"]["timeout"],)
                 response.raise_for_status()
                 data = response.json()
 
@@ -90,6 +80,6 @@ class ExchangeRateTool:
 
         return (
             f"Failed to get exchange rate after "
-            f"{config['tool_calls']['max_retries']} attempts. "
+            f"{self.config['tool_calls']['max_retries']} attempts. "
             f"Last error: {last_error}"
         )

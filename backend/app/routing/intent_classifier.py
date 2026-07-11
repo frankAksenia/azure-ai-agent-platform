@@ -12,17 +12,17 @@ class IntentClassifier:
     def classify(
         self,
         user_question: str,
-        max_tokens: int,
+        max_completion_tokens: int,
         temperature: float,
         top_p: float,
         timeout_seconds: float = 15.0,
     ) -> str:
         start_time = time.time()
         logger.info(
-            "Starting intent classification: deployment=%s, question_chars=%s, max_tokens=%s, timeout_seconds=%s",
+            "Starting intent classification: deployment=%s, question_chars=%s, max_completion_tokens=%s, timeout_seconds=%s",
             self.deployment_name,
             len(user_question),
-            max_tokens,
+            max_completion_tokens,
             timeout_seconds,
         )
 
@@ -50,14 +50,18 @@ Label:
             }
         ]
 
-        response = self.client.chat.completions.create(
-            model=self.deployment_name,
-            messages=messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            top_p=top_p,
-            timeout=timeout_seconds,
-        )
+        request_kwargs = {
+            "model": self.deployment_name,
+            "messages": messages,
+            "max_completion_tokens": max_completion_tokens,
+            "timeout": timeout_seconds,
+        }
+
+        if not self.deployment_name.startswith("gpt-5"):
+            request_kwargs["temperature"] = temperature
+            request_kwargs["top_p"] = top_p
+
+        response = self.client.chat.completions.create(**request_kwargs)
 
         raw_classification = response.choices[0].message.content.strip().lower()
         classification = raw_classification.strip("\"'`.,:; ")

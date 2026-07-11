@@ -6,7 +6,6 @@ from rag.embeddings import generate_embeddings
 
 logger = logging.getLogger(__name__)
 
-
 class AzureSearchRetriever:
     """
     Retrieves relevant documents from Azure AI Search using hybrid search:

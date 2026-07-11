@@ -12,9 +12,11 @@
       "console": "integratedTerminal",
       "python": "${workspaceFolder}/.venv/bin/python",
       "env": {
-        "AZURE_OPENAI_ENDPOINT": "https://fndry-generalagent-dev.services.ai.azure.com/openai/v1",
-        "AZURE_OPENAI_SLM_DEPLOYMENT_NAME": "Phi-4-mini-instruct",
-        "AZURE_OPENAI_LLM_DEPLOYMENT_NAME": "gpt-4.1-mini",
+        "AZURE_OPENAI_ENDPOINT": "https://fndry-generalagent-dev.cognitiveservices.azure.com/openai/v1",
+        // "AZURE_OPENAI_SLM_DEPLOYMENT_NAME": "Phi-4-mini-instruct",
+        // "AZURE_OPENAI_LLM_DEPLOYMENT_NAME": "gpt-4.1-mini",
+        "AZURE_OPENAI_SLM_DEPLOYMENT_NAME": "gpt-5-nano",
+        "AZURE_OPENAI_LLM_DEPLOYMENT_NAME": "gpt-5-mini",
         "EMBEDDING_MODEL_DEPLOYMENT_NAME": "text-embedding-3-small",
         "AI_SEARCH_ENDPOINT": "https://fndry-generalagent-dev-search.search.windows.net",
         "AI_SEARCH_INDEX_NAME": "search-index",
@@ -24,7 +26,8 @@
         "WEATHER_API_KEY": "c7a29cd66b26b3b47b3b5301594600c7",
         "WEATHER_API_URL": "https://api.openweathermap.org/data/2.5/weather",
         "EXCHANGE_RATE_API_KEY": "8e3b86ec38914b1aecf9c990",
-        "EXCHANGE_RATE_API_URL": "https://v6.exchangerate-api.com/v6"
+        "EXCHANGE_RATE_API_URL": "https://v6.exchangerate-api.com/v6",
+        "EXA_MCP_URL": "https://mcp.exa.ai/mcp"
       }
     }
   ]

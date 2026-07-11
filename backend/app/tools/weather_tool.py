@@ -1,11 +1,7 @@
 import logging
 import requests
 
-from config.config import load_config
-
 logger = logging.getLogger(__name__)
-
-config = load_config()
 
 
 class WeatherTool:
@@ -14,26 +10,21 @@ class WeatherTool:
     description = "Get the current weather for a given location."
 
     parameters = {
-        "type": "function",
-        "function": {
-            "name": "get_current_weather",
-            "description": "Get the current weather for a given location.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "city": {
-                        "type": "string",
-                        "description": "The city name (e.g., Seattle, London, Tokyo)",
-                    },
-                },
-                "required": ["city"],
+        "type": "object",
+        "properties": {
+            "city": {
+                "type": "string",
+                "description": "The city name, for example Seattle, London, or Tokyo.",
             },
-        }
+        },
+        "required": ["city"],
+        "additionalProperties": False,
     }
 
-    def __init__(self, weather_api_url: str, api_key: str):
+    def __init__(self, weather_api_url: str, api_key: str, config: dict):
         self.weather_api_url = weather_api_url
         self.api_key = api_key
+        self.config = config
 
     def run(self, city: str) -> str:
         logger.info("Running weather tool", extra={"city": city})
@@ -42,14 +33,14 @@ class WeatherTool:
 
         last_error = None
 
-        for attempt in range(config["tool_calls"]["max_retries"]):
+        for attempt in range(self.config["tool_calls"]["max_retries"]):
             logger.info(
                 f"Attempt {attempt + 1} to get weather data for {city}")
 
             try:
                 response = requests.get(
                     url,
-                    timeout=config["tool_calls"]["timeout"],
+                    timeout=self.config["tool_calls"]["timeout"],
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -86,6 +77,6 @@ class WeatherTool:
 
         return (
             f"Failed to get weather data for {city} after "
-            f"{config['tool_calls']['max_retries']} attempts. "
+            f"{self.config['tool_calls']['max_retries']} attempts. "
             f"Last error: {last_error}"
         )

@@ -19,7 +19,8 @@
 RESOURCE_GROUP = rg-generalagent-dev
 
 # Azure region
-LOCATION = swedencentral
+LOCATION = germanywestcentral
+# swedencentral
 
 # Azure AI Foundry account name
 AI_FOUNDRY_NAME = fndry-generalagent-dev

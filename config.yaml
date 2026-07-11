@@ -18,21 +18,21 @@ tool_calls:
   backoff_seconds: 5
 
 intent_classifier:
-  max_tokens: 5
+  max_tokens: 64
   temperature: 0
   top_p: 0.1
   timeout_seconds: 15
 
 llm:
   max_past_messages: 10
-  max_tokens: 150
+  max_tokens: 1000
   temperature: 0.5
   top_p: 0.5
   timeout_seconds: 30
 
 slm:
   max_past_messages: 5
-  max_tokens: 250
+  max_tokens: 1000
   temperature: 0.25
   top_p: 0.25
   timeout_seconds: 15
