@@ -32,30 +32,6 @@ from core.logging import setup_logging
 
 logger = logging.getLogger(__name__)
 
-
-HARDCODED_GROUNDING_RESULTS = """
-[Source 1]
-Title: Order: 55-inch 4K Smart TV
-Category: order
-
-Content:
-Order ID: 12345. Customer purchased a 55-inch 4K Ultra HD Smart TV,
-brand: Contoso Electronics, model: UltraView 5500, serial number: TV-987654321.
-Order date: 2024-11-15. Delivery address: 123 Main St, Sydney, NSW.
-The TV features HDR, built-in Wi-Fi, and voice assistant support.
-""".strip()
-
-
-class HardcodedGroundingRetriever:
-    def retrieve(self, question: str, top_k: int = 1) -> str:
-        logger.info(
-            "Using hard-coded grounding results instead of Azure AI Search: top_k=%s, question_chars=%s",
-            top_k,
-            len(question),
-        )
-        return HARDCODED_GROUNDING_RESULTS
-
-
 # def setup_search_index(openai_client):
 #     logger.info(
 #         "Setting up Azure AI Search grounding index: index_name=%s, embedding_model=%s",
@@ -88,19 +64,13 @@ def main():
 
     # user_message_content = "Can you please refund my order? I bought a TV previously, with an order ID of 12345, and it was not functioning when I first got it out of the box."
 
-    user_message_content = "Whats the weather in Vienna?"
-
-    session_state = "awaiting_order_number - user asked about refund but no order number"
 
     logger.info("Starting chat service.")
-
-    logger.info(f"User message content: {user_message_content}")
-
-    logger.info(f"Session state: {session_state}")
 
     config = load_config()
 
     openai_client = get_openai_client()
+
     content_safety_client = get_content_safety_client()
 
     tool_registry = ToolRegistry()
@@ -143,21 +113,46 @@ def main():
     #     openai_client=openai_client,
     #     embedding_model_deployment_name=EMBEDDING_MODEL_DEPLOYMENT_NAME,
     # )
-    retriever = HardcodedGroundingRetriever()
 
     chat_service = ChatService(
         safety_service=safety_service,
         model_router=model_router,
-        retriever=retriever,
         config=config
     )
 
-    result = chat_service.chat(
-        user_message_content=user_message_content,
-        session_state=session_state
-    )
 
-    print(result)
+    while user_input.lower() not in ["quit", "exit", "bye"]:
+        # Input filtering (from Unit 3)
+        if not safety_service.is_text_safe(user_input):
+            print("\n[ASSISTANT] I cannot process that request due to content safety.")
+            user_input = input("\n[You] ")
+            continue
+
+        # Process through manager (delegates to appropriate specialist)
+        response = manager_agent.process_message(user_input)
+
+        if not safety_service.is_text_safe(response):
+            print(f"\n[ASSISTANT] {config['content_safety']['safe_response']}")
+        else:
+            print(f"\n[ASSISTANT] {response}")
+
+        user_input = input("\n[You] ")
+
+    # Display routing metrics
+    print("\n" + "=" * 50)
+    print("CONVERSATION ENDED")
+    print("=" * 50)
+
+    metrics = manager_agent.get_metrics()
+    print("\nROUTING METRICS:")
+    print("-" * 40)
+    print(f"Total requests routed: {metrics['total_requests']}")
+    print(f"  → RefundAgent: {metrics['refund']}")
+    print(f"  → ProductAgent: {metrics['product']}")
+    print(f"  → AccountAgent: {metrics['account']}")
+    print(f"  → Unable to route: {metrics['unable_to_route']}")
+
+
 
 
 if __name__ == "__main__":
