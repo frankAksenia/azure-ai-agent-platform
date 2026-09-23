@@ -1,7 +1,7 @@
 param aiFoundryName string
 param location string
 
-resource aiFoundry 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
+resource aiFoundry 'Microsoft.CognitiveServices/accounts@2026-07-01' = {
   name: aiFoundryName
   location: location
   identity: {

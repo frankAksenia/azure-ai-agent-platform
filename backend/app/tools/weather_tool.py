@@ -1,7 +1,8 @@
 import logging
+
 import requests
 
-from config.config import load_config
+from backend.app.config.config import load_config
 
 logger = logging.getLogger(__name__)
 
@@ -31,14 +32,14 @@ class WeatherTool:
         }
     }
 
-    def __init__(self, weather_api_url: str, api_key: str):
-        self.weather_api_url = weather_api_url
+    def __init__(self, api_url: str, api_key: str):
+        self.api_url = api_url
         self.api_key = api_key
 
     def run(self, city: str) -> str:
         logger.info("Running weather tool", extra={"city": city})
 
-        url = f"{self.weather_api_url}?q={city}&appid={self.api_key}&units=metric"
+        url = f"{self.api_url}?q={city}&appid={self.api_key}&units=metric"
 
         last_error = None
 
@@ -49,7 +50,7 @@ class WeatherTool:
             try:
                 response = requests.get(
                     url,
-                    timeout=config["tool_calls"]["timeout"],
+                    timeout=config["tool_calls"]["timeout_seconds"],
                 )
                 response.raise_for_status()
                 data = response.json()

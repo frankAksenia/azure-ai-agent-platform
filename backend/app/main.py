@@ -1,163 +1,138 @@
 import logging
-from tools.exchange_rate import ExchangeRateTool
-from tools.tool_registry import ToolRegistry
-from tools.weather_tool import WeatherTool
-from config.config import load_config
-# Azure AI Search is disabled for now because this environment does not have
-# an AI Search resource provisioned.
-# from rag.document_loader import get_documents, upload_documents
-# from rag.indexer import create_index
-# from rag.retriever import AzureSearchRetriever
-from core.clients import (
-    get_openai_client,
-    get_content_safety_client,
-    # get_ai_search_client,
-    # get_ai_search_index_client,
-)
-from core.settings import (
+import sys
+from pathlib import Path
+
+APP_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = APP_ROOT.parent
+for candidate in (str(REPO_ROOT), str(APP_ROOT)):
+    if candidate not in sys.path:
+        sys.path.insert(0, candidate)
+
+from backend.app.agents.support_agent.support_agent import SupportAgent
+from backend.app.agents.billing_agent.billing_agent import BillingAgent
+from backend.app.services.simple_intent_responder import SimpleIntentResponder
+from backend.app.tools.exchange_rate import ExchangeRateTool
+from backend.app.tools.tool_registry import ToolRegistry
+from backend.app.tools.weather_tool import WeatherTool
+from backend.app.config.config import load_config
+from backend.app.core.clients import get_openai_client, get_content_safety_client
+
+from backend.app.core.settings import (
     AZURE_OPENAI_LLM_DEPLOYMENT_NAME,
     AZURE_OPENAI_SLM_DEPLOYMENT_NAME,
-    # AI_SEARCH_INDEX_NAME,
-    # EMBEDDING_MODEL_DEPLOYMENT_NAME,
     WEATHER_API_URL,
     WEATHER_API_KEY,
     EXCHANGE_RATE_API_URL,
     EXCHANGE_RATE_API_KEY,
 )
-from safety.content_safety import ContentSafetyService
-from routing.intent_classifier import IntentClassifier
-from routing.model_router import ModelRouter
-from services.chat_service import ChatService
-from core.logging import setup_logging
+
+from backend.app.safety.content_safety import ContentSafetyService
+from backend.app.routing.intent_classifier import IntentClassificationService
+from backend.app.services.chat_service import ChatService
+from backend.app.core.logging import setup_logging
 
 logger = logging.getLogger(__name__)
-
-
-HARDCODED_GROUNDING_RESULTS = """
-[Source 1]
-Title: Order: 55-inch 4K Smart TV
-Category: order
-
-Content:
-Order ID: 12345. Customer purchased a 55-inch 4K Ultra HD Smart TV,
-brand: Contoso Electronics, model: UltraView 5500, serial number: TV-987654321.
-Order date: 2024-11-15. Delivery address: 123 Main St, Sydney, NSW.
-The TV features HDR, built-in Wi-Fi, and voice assistant support.
-""".strip()
-
-
-class HardcodedGroundingRetriever:
-    def retrieve(self, question: str, top_k: int = 1) -> str:
-        logger.info(
-            "Using hard-coded grounding results instead of Azure AI Search: top_k=%s, question_chars=%s",
-            top_k,
-            len(question),
-        )
-        return HARDCODED_GROUNDING_RESULTS
-
-
-# def setup_search_index(openai_client):
-#     logger.info(
-#         "Setting up Azure AI Search grounding index: index_name=%s, embedding_model=%s",
-#         AI_SEARCH_INDEX_NAME,
-#         EMBEDDING_MODEL_DEPLOYMENT_NAME,
-#     )
-#
-#     index_result = create_index(
-#         index_client=get_ai_search_index_client(),
-#         index_name=AI_SEARCH_INDEX_NAME,
-#     )
-#     logger.info("Index setup result: %s", index_result)
-#
-#     upload_documents(
-#         ai_search_client=get_ai_search_client(),
-#         openai_client=openai_client,
-#         embedding_model_deployment_name=EMBEDDING_MODEL_DEPLOYMENT_NAME,
-#         index_name=AI_SEARCH_INDEX_NAME,
-#         documents=get_documents(),
-#     )
-#     logger.info(
-#         "Azure AI Search grounding index setup completed: index_name=%s",
-#         AI_SEARCH_INDEX_NAME,
-#     )
-
 
 def main():
 
     setup_logging()
 
-    # user_message_content = "Can you please refund my order? I bought a TV previously, with an order ID of 12345, and it was not functioning when I first got it out of the box."
-
-    user_message_content = "Whats the weather in Vienna?"
-
-    session_state = "awaiting_order_number - user asked about refund but no order number"
-
     logger.info("Starting chat service.")
 
-    logger.info(f"User message content: {user_message_content}")
-
-    logger.info(f"Session state: {session_state}")
-
     config = load_config()
+    logger.info("Configuration loaded.")
 
     openai_client = get_openai_client()
+    logger.info("OpenAI client initialized.")
+
     content_safety_client = get_content_safety_client()
+    logger.info("Content Safety client initialized.")
 
     tool_registry = ToolRegistry()
+    logger.info("Registering tools.")
 
-    tool_registry.register_tool(
-        WeatherTool(
-            weather_api_url=WEATHER_API_URL,
-            api_key=WEATHER_API_KEY,
+    tool_registry.register_tool(WeatherTool(
+        api_url=WEATHER_API_URL, 
+        api_key=WEATHER_API_KEY)
         )
-    )
+    logger.info("Registered Weather Tool.")
 
-    tool_registry.register_tool(
-        ExchangeRateTool(
-            exchange_rate_api_url=EXCHANGE_RATE_API_URL,
-            api_key=EXCHANGE_RATE_API_KEY,
+    tool_registry.register_tool(ExchangeRateTool(
+        api_url=EXCHANGE_RATE_API_URL, 
+        api_key=EXCHANGE_RATE_API_KEY)
         )
-    )
+    logger.info("Registered Exchange Rate Tool.")
 
     # setup_search_index(openai_client)
 
     safety_service = ContentSafetyService(
-        client=content_safety_client,
-        severity_threshold=config["content_safety"]["severity_threshold"]
-    )
+        client=content_safety_client, 
+        config=config,
+        )
+    logger.info("Content Safety Service initialized.")
 
-    intent_classifier = IntentClassifier(
-        client=openai_client,
-        deployment_name=AZURE_OPENAI_SLM_DEPLOYMENT_NAME
-    )
+    intent_classifier = IntentClassificationService(
+        openai_client=openai_client, 
+        slm_deployment_name=AZURE_OPENAI_SLM_DEPLOYMENT_NAME, 
+        config=config)
+    logger.info("Intent Classification Service initialized.")
 
-    model_router = ModelRouter(
-        client=openai_client,
-        intent_classifier=intent_classifier,
-        llm_deployment=AZURE_OPENAI_LLM_DEPLOYMENT_NAME,
-        slm_deployment=AZURE_OPENAI_SLM_DEPLOYMENT_NAME
+    support_agent = SupportAgent(
+        openai_client=openai_client, 
+        llm_deployment_name=AZURE_OPENAI_LLM_DEPLOYMENT_NAME, 
+        config=config)
+    logger.info("Support Agent initialized.")
+
+    billing_agent = BillingAgent(
+        openai_client=openai_client, 
+        llm_deployment_name=AZURE_OPENAI_LLM_DEPLOYMENT_NAME, 
+        config=config)
+    logger.info("Billing Agent initialized.")
+
+    simple_intent_responder = SimpleIntentResponder(
+        openai_client=openai_client,
+        slm_deployment_name=AZURE_OPENAI_SLM_DEPLOYMENT_NAME,
+        config=config,
     )
+    logger.info("Simple Intent Responder initialized.")
 
     # retriever = AzureSearchRetriever(
     #     ai_search_client=get_ai_search_client(),
     #     openai_client=openai_client,
     #     embedding_model_deployment_name=EMBEDDING_MODEL_DEPLOYMENT_NAME,
     # )
-    retriever = HardcodedGroundingRetriever()
 
     chat_service = ChatService(
-        safety_service=safety_service,
-        model_router=model_router,
-        retriever=retriever,
-        config=config
-    )
+        content_safety_service=safety_service, 
+        intent_classification_service=intent_classifier, 
+        support_agent=support_agent, 
+        billing_agent=billing_agent, 
+        simple_intent_responder=simple_intent_responder,
+        tool_registry=tool_registry,
+        conversation_history=[], 
+        config=config)
+    logger.info("Chat Service initialized.")
 
-    result = chat_service.chat(
-        user_message_content=user_message_content,
-        session_state=session_state
-    )
+    logger.info("STARTING CONVERSATION")
 
-    print(result)
+    print("Type 'quit', 'exit', or 'bye' to end the conversation.\n")
+
+    user_input = input("[You] ")
+
+    while user_input.lower() not in ["quit", "exit", "bye"]:
+
+        response = chat_service.process_message(user_input)
+
+        print(f"\n[ASSISTANT - {chat_service.current_agent}] {response}")
+
+        user_input = input("\n[You] ")
+
+    print("\n" + "=" * 50)
+    print("CONVERSATION ENDED")
+    print("=" * 50)
+    print(f"Final agent: {chat_service.current_agent}")
+
+
 
 
 if __name__ == "__main__":

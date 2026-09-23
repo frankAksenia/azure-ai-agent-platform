@@ -1,62 +1,90 @@
-# Azure Agent
+# Azure AI Agent Platform
 
-Azure Agent is a Python sample backend for a customer-support chat agent that runs against Azure AI services.
+This project is a Python-based CLI chat application for client-side Azure AI Foundry. It routes user requests through a lightweight intent classifier, invokes either a support or billing agent, applies Azure AI Content Safety checks, and can expose local tools for weather and currency conversion.
 
-The app checks user and model text with Azure AI Content Safety, classifies the request as simple or complex, routes simple requests to a smaller deployment and complex requests to a larger deployment, can expose local tools to the larger model, and returns response metadata such as selected model, latency, and token usage.
+The current implementation is an interactive local workflow rather than a web service or REST API. It is designed to be run directly from the repository root and to work with Azure-hosted model deployments and Azure AI Content Safety.
 
-This main-branch version does not include MCP server integration.
+## What it does
 
-## Current Capabilities
+- Authenticates to Azure using `DefaultAzureCredential`
+- Connects to Azure OpenAI-compatible chat completion endpoints
+- Checks user input and model output with Azure AI Content Safety
+- Classifies requests as `simple` or `complex`
+- Uses a simple responder for low-risk requests
+- Routes complex requests to a support agent and can hand off to a billing agent
+- Registers local function tools for weather and exchange-rate lookup
+- Keeps a local in-memory conversation history for the current session
 
-- Authenticates to Azure with `DefaultAzureCredential`.
-- Uses the OpenAI-compatible Azure AI Foundry endpoint for chat completions.
-- Uses Azure AI Content Safety before and after generation.
-- Classifies each request as `simple` or `complex`.
-- Routes simple requests to the SLM deployment and complex requests to the LLM deployment.
-- Includes local function-tool classes for weather and exchange-rate lookup.
-- Builds support-agent prompts with persona, safety boundaries, grounding rules, optional session state, user name, and user role.
-- Limits retained chat history per model using values from `config.yaml`.
-- Includes Bicep templates for Azure AI Foundry, model deployments, Content Safety, AI Project, embedding deployment, and scaffolded AI Search resources.
-
-## Project Structure
+## Current architecture
 
 ```text
 backend/app/
-  main.py                     # Local entry point and service wiring
-  config/                     # YAML config loader
-  core/                       # Environment settings, Azure clients, logging
-  prompts/                    # System and user prompt builders
-  rag/                        # Azure AI Search indexing/retrieval scaffolding
-  routing/                    # Intent classification and model routing
-  safety/                     # Content Safety integration
-  services/                   # Chat orchestration
-  tokens/                     # Token counting and truncation helpers
-  tools/                      # Local weather and exchange-rate tools
-infra/                        # Azure Bicep templates
-config.yaml                   # Runtime model, safety, retrieval, and tool settings
-.env.example                  # Environment variable template
-requirements.txt              # Python dependencies
-Makefile                      # Azure CLI deployment helpers
+  main.py                     # CLI entry point and service wiring
+  agents/
+    billing_agent/
+      billing_agent.py
+      billing_agent_prompt.py
+    support_agent/
+      support_agent.py
+      support_agent_prompt.py
+  config/
+    config.py                 # YAML config loader
+  core/
+    clients.py                # Azure client factories
+    logging.py                # Logging setup
+    settings.py               # Env var and default config access
+  rag/
+    document_loader.py
+    embeddings.py
+    indexer.py
+    retriever.py
+    setup.py                  # Azure AI Search scaffolding
+  routing/
+    intent_classifier.py      # Simple vs complex classification
+  safety/
+    content_safety.py         # Safety checks
+  services/
+    chat_service.py           # Orchestration logic
+    simple_intent_responder.py
+  tools/
+    exchange_rate.py          # Currency conversion tool
+    tool_registry.py          # Tool registration and schema builder
+    weather_tool.py           # Weather lookup tool
+infra/
+  main.bicep
+  modules/
+    ai-foundry.bicep
+    ai-project.bicep
+    ai-search.bicep
+    content-safety.bicep
+    model-deployment.bicep
+config.yaml                  # Runtime settings
+requirements.txt             # Python dependencies
+Makefile                     # Azure deployment helper commands
 ```
 
-## Runtime Flow
+## Runtime flow
 
-1. `backend/app/main.py` loads `config.yaml`, creates Azure clients, registers local tools, and creates application services.
-2. `ChatService` retrieves grounding context, builds the support-agent system prompt, and checks the user input with Content Safety.
-3. `IntentClassifier` classifies the request as `simple` or `complex` using the SLM deployment.
-4. `ModelRouter` selects the SLM or LLM deployment.
-5. Simple requests are sent directly to the selected model.
-6. Complex requests are sent to the LLM with available local tools.
-7. The generated answer is checked with Content Safety before returning the final result.
+1. `backend/app/main.py` loads `config.yaml`.
+2. It initializes Azure clients for OpenAI and Content Safety.
+3. It registers local tools in a `ToolRegistry`.
+4. It builds the `ContentSafetyService`, `IntentClassificationService`, support agent, billing agent, and chat service.
+5. The user enters a prompt in the terminal loop.
+6. `ChatService` validates the input with Content Safety.
+7. The intent classifier decides whether the request is simple or complex.
+8. Simple requests are handled by `SimpleIntentResponder`.
+9. Complex requests are processed by the support agent and may hand off to billing.
+10. The final answer is checked for safety before returning it to the terminal.
 
 ## Prerequisites
 
-- Python 3.11 or later.
-- Azure CLI.
-- Access to an Azure subscription that can create or use Azure AI Foundry, model deployments, and Azure AI Content Safety.
+- Python 3.11+
+- Azure CLI
+- Azure subscription access for Azure AI Foundry / Azure OpenAI-compatible deployments
+- Azure AI Content Safety resource
 - Optional API keys for local tools:
-  - OpenWeather for `get_weather`.
-  - ExchangeRate-API for `get_exchange_rate`.
+  - OpenWeather
+  - ExchangeRate-API
 
 Log in before running locally:
 
@@ -64,53 +92,71 @@ Log in before running locally:
 az login
 ```
 
-The app uses `DefaultAzureCredential`, so local development authenticates through your Azure CLI session.
+The project uses `DefaultAzureCredential`, so local development relies on your Azure CLI session or another supported identity source.
 
-## Environment Variables
+## Environment variables
 
-Create a local `.env` file:
-
-```bash
-cp .env.example .env
-```
-
-Fill in the values:
+Create a local `.env` file or export these variables before running the app.
 
 ```bash
-AZURE_OPENAI_ENDPOINT=
-AZURE_OPENAI_LLM_DEPLOYMENT_NAME=
-AZURE_OPENAI_SLM_DEPLOYMENT_NAME=
-CONTENT_SAFETY_ENDPOINT=
-USER_NAME="John Doe"
-USER_ROLE="Customer"
-WEATHER_API_KEY=
-WEATHER_API_URL="https://api.openweathermap.org/data/2.5/weather"
-EXCHANGE_RATE_API_KEY=
-EXCHANGE_RATE_API_URL="https://v6.exchangerate-api.com/v6"
+export AZURE_OPENAI_ENDPOINT="https://<your-resource>.services.ai.azure.com/api/projects/<project>"
+export AZURE_OPENAI_LLM_DEPLOYMENT_NAME="gpt-5.1"
+export AZURE_OPENAI_SLM_DEPLOYMENT_NAME="gpt-4.1"
+export CONTENT_SAFETY_ENDPOINT="https://<your-content-safety-resource>.cognitiveservices.azure.com"
+export USER_NAME="John Doe"
+export USER_ROLE="Customer"
+export WEATHER_API_KEY="<openweather-key>"
+export WEATHER_API_URL="https://api.openweathermap.org/data/2.5/weather"
+export EXCHANGE_RATE_API_KEY="<exchange-rate-key>"
+export EXCHANGE_RATE_API_URL="https://v6.exchangerate-api.com/v6"
 ```
 
-Environment variable reference:
-
-- `AZURE_OPENAI_ENDPOINT`: Azure AI Foundry/OpenAI-compatible endpoint. The Bicep output is `OPENAI_ENDPOINT`.
-- `AZURE_OPENAI_LLM_DEPLOYMENT_NAME`: Larger deployment used for complex requests. The Bicep output is `LLM_MODEL_DEPLOYMENT_NAME`.
-- `AZURE_OPENAI_SLM_DEPLOYMENT_NAME`: Smaller deployment used for classification and simple requests. The Bicep outputs are `SLM_MODEL_DEPLOYMENT_NAME` and `SLM_MODEL_DEPLOYMENT_NAME_V2`.
-- `CONTENT_SAFETY_ENDPOINT`: Azure AI Content Safety endpoint. The Bicep output is `CONTENT_SAFETY_ENDPOINT`.
-- `USER_NAME`: Optional user name inserted into the support-agent prompt.
-- `USER_ROLE`: Optional user role inserted into the support-agent prompt.
-- `WEATHER_API_KEY`: API key for the OpenWeather current-weather endpoint.
-- `WEATHER_API_URL`: Base URL for weather lookup.
-- `EXCHANGE_RATE_API_KEY`: API key for ExchangeRate-API.
-- `EXCHANGE_RATE_API_URL`: Base URL for exchange-rate lookup.
-
-Export the `.env` file before running:
+Optional values used by the Azure AI Search/RAG scaffolding:
 
 ```bash
-set -a
-source .env
-set +a
+export AI_SEARCH_ENDPOINT="https://<your-search-service>.search.windows.net"
+export AI_SEARCH_INDEX_NAME="support-docs"
+export EMBEDDING_MODEL_DEPLOYMENT_NAME="text-embedding-3-small"
 ```
 
-## Install Dependencies
+## Configuration
+
+The runtime settings live in `config.yaml`.
+
+```yaml
+content_safety:
+  severity_threshold: 1
+  safe_response: "I cannot generate a response to that question due to content safety concerns."
+
+llm:
+  max_past_messages: 10
+  max_tokens: 150
+  temperature: 0.5
+  top_p: 0.5
+  timeout_seconds: 30
+
+slm:
+  max_past_messages: 5
+  max_tokens: 250
+  temperature: 0.25
+  top_p: 0.25
+  timeout_seconds: 15
+
+tool_calls:
+  timeout_seconds: 30
+  max_retries: 3
+  backoff_seconds: 5
+```
+
+Key settings:
+
+- `content_safety.severity_threshold`: maximum allowed severity before blocking content
+- `content_safety.safe_response`: fallback answer when input or output is blocked
+- `llm`: parameters for the larger support model path
+- `slm`: parameters for the smaller classification/simple responder path
+- `tool_calls`: retry and timeout behavior for local tools
+
+## Local setup
 
 Create and activate a virtual environment:
 
@@ -119,14 +165,14 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-Install Python packages:
+Install dependencies:
 
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-## Run Locally
+## Run the app
 
 From the repository root:
 
@@ -134,64 +180,55 @@ From the repository root:
 python backend/app/main.py
 ```
 
-The current entry point contains example messages for refund and weather requests. To test another prompt, edit `user_message_content` in `backend/app/main.py`.
+The app will prompt for a message until you type one of:
 
-The script prints a result similar to:
-
-```python
-{
-    "response": "...",
-    "model": "Phi-4 (SLM)",
-    "latency_ms": 1234.56,
-    "token_usage": {
-        "prompt_tokens": 100,
-        "completion_tokens": 25,
-        "total_tokens": 125
-    }
-}
+```text
+quit
+exit
+bye
 ```
 
-## Configuration
+Example interaction:
 
-Edit `config.yaml` to tune runtime behavior:
+```text
+[You] I need a refund for my subscription.
+[ASSISTANT - BillingAgent] ...
+```
 
-- `content_safety.severity_threshold`: Maximum allowed Content Safety severity.
-- `content_safety.safe_response`: Fallback response when user input or model output is blocked.
-- `system_instruction.max_tokens`: Maximum token budget for the generated system instruction.
-- `ai_search.top_k`: Number of grounding records requested from the retriever.
-- `tool_calls`: Tool timeout, retry, and backoff settings.
-- `intent_classifier`: Classification generation limits and timeout.
-- `llm`: Complex-request model history, output, sampling, and timeout settings.
-- `slm`: Simple-request model history, output, sampling, and timeout settings.
+## Tools included
 
-## Tools
+The app currently includes two local function tools:
 
-Local tool classes are defined under `backend/app/tools/`:
+### Weather tool
 
-- `get_weather`: Uses OpenWeather to return current weather for a city.
-- `get_exchange_rate`: Uses ExchangeRate-API to return a currency conversion rate.
+- Name: `get_weather`
+- Purpose: returns current weather for a city
+- API: OpenWeather
 
-This branch has no MCP tool registry or remote MCP server connection. MCP-backed web research is only available on the MCP branch.
+### Exchange rate tool
 
-## Grounding And AI Search
+- Name: `get_exchange_rate`
+- Purpose: returns conversion rate and converted value for two currencies
+- API: ExchangeRate-API
 
-The repository includes Azure AI Search indexing and retrieval modules under `backend/app/rag/`, plus an `infra/modules/ai-search.bicep` template. The active local runtime currently uses `HardcodedGroundingRetriever` in `backend/app/main.py` because Azure AI Search client setup is commented out.
+## Notes on the current implementation
 
-To enable Azure AI Search, restore the commented search client imports and setup in `backend/app/main.py` and `backend/app/core/clients.py`, deploy or provide an AI Search resource, and set the relevant search and embedding environment variables.
+- This is a local interactive application; there is no HTTP endpoint or REST API layer.
+- The project includes Azure AI Search and RAG modules, but the default runtime path is not wired to remote search retrieval in the main CLI loop.
+- The support and billing agents are prompt-driven and can perform handoff logic based on intent and tool call results.
+- The repo contains Bicep templates under `infra/` for provisioning Azure AI resources, but the app itself is run locally from Python.
 
-## Deploy Azure Infrastructure
+## Azure deployment assets
 
-The `infra/` directory contains Bicep templates, and the `Makefile` wraps common Azure CLI commands.
+The `infra` folder contains Bicep templates for provisioning:
 
-Check and adjust the configuration at the top of `Makefile` before deploying:
+- Azure AI Foundry account
+- AI project
+- model deployments
+- Azure AI Content Safety
+- Azure AI Search scaffolding
 
-- `RESOURCE_GROUP`
-- `LOCATION`
-- `AI_FOUNDRY_NAME`
-- `TEMPLATE_FILE`
-- `DEPLOYMENT_NAME`
-
-Common commands:
+Useful commands:
 
 ```bash
 make validate
@@ -201,27 +238,22 @@ make outputs
 make cleanup
 ```
 
-The current `infra/main.bicep` deploys:
+## Known limitations
 
-- Azure AI Foundry account.
-- Azure AI Project.
-- GPT-4.1 Mini deployment for the LLM path.
-- Phi-4 Mini Instruct deployment for the SLM path.
-- GPT-5 Nano deployment as an additional SLM deployment.
-- Text Embedding 3 Small deployment.
-- Azure AI Content Safety account.
+- No dedicated web server or FastAPI application is included in the current branch
+- No automated test suite is currently implemented in the repo
+- Search/RAG functionality is scaffolded but not enabled by default in the interactive chat flow
+- Live Azure resources are required for a full end-to-end run
 
-AI Search deployment is present but commented out in `infra/main.bicep`.
+## Development notes
 
-## Development Notes
-
-Regenerate dependencies only when intentionally updating package versions:
+To regenerate the dependency lock file intentionally:
 
 ```bash
 pip freeze > requirements.txt
 ```
 
-If the virtual environment needs to be recreated:
+If you need to recreate the virtual environment:
 
 ```bash
 deactivate

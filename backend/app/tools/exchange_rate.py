@@ -1,7 +1,8 @@
 import logging
+
 import requests
 
-from config.config import load_config
+from backend.app.config.config import load_config
 
 logger = logging.getLogger(__name__)
 
@@ -29,24 +30,29 @@ class ExchangeRateTool:
                         "type": "string",
                         "description": "Target currency code, for example USD",
                     },
+                    "amount": {
+                        "type": "number",
+                        "description": "Optional amount to convert. Defaults to 1.",
+                    },
                 },
-                "required": ["from_currency", "to_currency", "amount"],
+                "required": ["from_currency", "to_currency"],
             },
         }
     }
 
-    def __init__(self, exchange_rate_api_url: str, api_key: str):
-        self.exchange_rate_api_url = exchange_rate_api_url
+    def __init__(self, api_url: str, api_key: str):
+        self.api_url = api_url
         self.api_key = api_key
 
-    def run(self, from_currency: str, to_currency: str) -> str:
+    def run(self, from_currency: str, to_currency: str, amount: float | str = 1.0) -> str:
         from_currency = from_currency.upper()
         to_currency = to_currency.upper()
+        amount_value = float(amount)
 
         logger.info("Running exchange rate tool", extra={
-                    "from_currency": from_currency, "to_currency": to_currency},)
+                    "from_currency": from_currency, "to_currency": to_currency, "amount": amount_value},)
 
-        url = f"{self.exchange_rate_api_url}/{self.api_key}/pair/{from_currency}/{to_currency}"
+        url = f"{self.api_url}/{self.api_key}/pair/{from_currency}/{to_currency}"
 
         last_error = None
 
@@ -56,7 +62,7 @@ class ExchangeRateTool:
 
             try:
                 response = requests.get(
-                    url, timeout=config["tool_calls"]["timeout"],)
+                    url, timeout=config["tool_calls"]["timeout_seconds"],)
                 response.raise_for_status()
                 data = response.json()
 
@@ -67,9 +73,10 @@ class ExchangeRateTool:
                         raise ValueError(
                             "conversion_rate not found in API response.")
 
+                    converted_amount = amount_value * float(exchange_rate)
                     return (
-                        f"Exchange rate from {from_currency} to {to_currency}: "
-                        f"{exchange_rate}"
+                        f"Exchange rate from {from_currency} to {to_currency}: {exchange_rate}. "
+                        f"{amount_value} {from_currency} = {converted_amount} {to_currency}."
                     )
 
                 raise ValueError(

@@ -12,18 +12,20 @@ class ToolRegistry:
         self.tools[tool.name] = tool
 
     def get_available_tools(self) -> list[dict]:
-        return [
-            {
-                "type": "function",
-                "function": {
-                    "name": tool.name,
-                    "description": tool.description,
-                    "parameters": tool.parameters,
-                },
-                "required": tool.required,
-            }
-            for tool in self.tools.values()
-        ]
+        available_tools = []
+        for tool in self.tools.values():
+            parameters = tool.parameters.get("function", {}).get("parameters", {})
+            available_tools.append(
+                {
+                    "type": "function",
+                    "function": {
+                        "name": tool.name,
+                        "description": tool.description,
+                        "parameters": parameters,
+                    },
+                }
+            )
+        return available_tools
 
     def run_tool(self, tool_name: str, arguments: dict):
         if tool_name not in self.tools:
