@@ -72,6 +72,7 @@ what-if:
 # Automatically creates the resource group first.
 # ----------------------------------------------------------
 deploy: group
+	az bicep upgrade
 	az deployment group create \
 		--name $(DEPLOYMENT_NAME) \
 		--resource-group $(RESOURCE_GROUP) \

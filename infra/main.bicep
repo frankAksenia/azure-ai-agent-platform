@@ -3,10 +3,11 @@ param aiProjectName string = '${aiFoundryName}-proj'
 param contentSafetyName string = '${aiFoundryName}-content-safety'
 param location string = resourceGroup().location
 
-param llm_model string = 'gpt-4.1-mini'
-param slm_model string = 'Phi-4-mini-instruct'
-// param slm_model_v2 string = 'gpt-5-nano'
-// param embedding_model string = 'text-embedding-3-small'
+param llm_model string = 'gpt-5.1'
+param llm_model_version string = '2025-11-13'
+param slm_model string = 'gpt-4.1'
+param slm_model_version string = '2025-04-14'
+
 
 module aiFoundry './modules/ai-foundry.bicep' = {
   name: 'deploy-ai-foundry'
@@ -35,7 +36,7 @@ module llmDeployment './modules/model-deployment.bicep' = {
     deploymentName: llm_model
     modelName: llm_model
     modelFormat: 'OpenAI'
-    modelVersion: '2025-04-14'
+    modelVersion: llm_model_version
     skuName: 'GlobalStandard'
     capacity: 1
   }
@@ -50,8 +51,8 @@ module slmDeployment './modules/model-deployment.bicep' = {
     aiFoundryName: aiFoundryName
     deploymentName: slm_model
     modelName: slm_model
-    modelFormat: 'Microsoft'
-    modelVersion: '1'
+    modelFormat: 'OpenAI'
+    modelVersion: slm_model_version
     skuName: 'GlobalStandard'
     capacity: 1
   }
@@ -59,22 +60,6 @@ module slmDeployment './modules/model-deployment.bicep' = {
     llmDeployment
   ]
 }
-
-// module slmDeployment_v2 './modules/model-deployment.bicep' = {
-//   name: 'deploy-slm-model_v2'
-//   params: {
-//     aiFoundryName: aiFoundryName
-//     deploymentName: slm_model_v2
-//     modelName: slm_model_v2
-//     modelFormat: 'OpenAI'
-//     modelVersion: '2025-08-07'
-//     skuName: 'GlobalStandard'
-//     capacity: 1
-//   }
-//   dependsOn: [
-//     slmDeployment
-//   ]
-// }
 
 // module embeddingDeployment './modules/model-deployment.bicep' = {
 //   name: 'deploy-embedding-model'
@@ -114,7 +99,6 @@ module contentSafety './modules/content-safety.bicep' = {
 output OPENAI_ENDPOINT string = aiFoundry.outputs.openAiEndpoint
 output LLM_MODEL_DEPLOYMENT_NAME string = llmDeployment.outputs.deploymentName
 output SLM_MODEL_DEPLOYMENT_NAME string = slmDeployment.outputs.deploymentName
-// output SLM_MODEL_DEPLOYMENT_NAME_V2 string = slmDeployment_v2.outputs.deploymentName
 output CONTENT_SAFETY_ENDPOINT string = contentSafety.outputs.contentSafetyEndpoint
 // output AI_SEARCH_ENDPOINT string = aiSearch.outputs.AI_SEARCH_SERVICE_ENDPOINT
 // output AI_SEARCH_SERVICE_NAME string = aiSearch.outputs.AI_SEARCH_SERVICE_DEPLOYMENT_NAME
