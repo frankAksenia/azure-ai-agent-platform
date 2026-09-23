@@ -1,7 +1,8 @@
 import logging
+
 import requests
 
-from config.config import load_config
+from backend.app.config.config import load_config
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ class WeatherTool:
             try:
                 response = requests.get(
                     url,
-                    timeout=config["tool_calls"]["timeout"],
+                    timeout=config["tool_calls"]["timeout_seconds"],
                 )
                 response.raise_for_status()
                 data = response.json()

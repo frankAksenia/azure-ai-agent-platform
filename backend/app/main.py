@@ -1,14 +1,23 @@
 import logging
+import sys
+from pathlib import Path
+
+APP_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = APP_ROOT.parent
+for candidate in (str(REPO_ROOT), str(APP_ROOT)):
+    if candidate not in sys.path:
+        sys.path.insert(0, candidate)
+
 from backend.app.agents.support_agent.support_agent import SupportAgent
 from backend.app.agents.billing_agent.billing_agent import BillingAgent
 from backend.app.services.simple_intent_responder import SimpleIntentResponder
-from tools.exchange_rate import ExchangeRateTool
-from tools.tool_registry import ToolRegistry
-from tools.weather_tool import WeatherTool
-from config.config import load_config
-from core.clients import get_openai_client, get_content_safety_client
+from backend.app.tools.exchange_rate import ExchangeRateTool
+from backend.app.tools.tool_registry import ToolRegistry
+from backend.app.tools.weather_tool import WeatherTool
+from backend.app.config.config import load_config
+from backend.app.core.clients import get_openai_client, get_content_safety_client
 
-from core.settings import (
+from backend.app.core.settings import (
     AZURE_OPENAI_LLM_DEPLOYMENT_NAME,
     AZURE_OPENAI_SLM_DEPLOYMENT_NAME,
     WEATHER_API_URL,
@@ -17,10 +26,10 @@ from core.settings import (
     EXCHANGE_RATE_API_KEY,
 )
 
-from safety.content_safety import ContentSafetyService
-from routing.intent_classifier import IntentClassificationService
-from services.chat_service import ChatService
-from core.logging import setup_logging
+from backend.app.safety.content_safety import ContentSafetyService
+from backend.app.routing.intent_classifier import IntentClassificationService
+from backend.app.services.chat_service import ChatService
+from backend.app.core.logging import setup_logging
 
 logger = logging.getLogger(__name__)
 

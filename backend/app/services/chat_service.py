@@ -1,26 +1,11 @@
 import json
 import logging
-<<<<<<< HEAD
-from tools.tool_registry import ToolRegistry
-from tokens.token_counter import count_tokens, truncate_system_instruction
-from core.settings import USER_NAME, USER_ROLE
-=======
->>>>>>> ec49f2d (Fix handoff workflow.)
 
 logger = logging.getLogger(__name__)
 
 
 class ChatService:
-<<<<<<< HEAD
-    def __init__(self, safety_service, model_router, config: dict):
-        self.safety_service = safety_service
-        self.model_router = model_router
-        self.config = config
-
-    def chat(
-=======
     def __init__(
->>>>>>> ec49f2d (Fix handoff workflow.)
         self,
         content_safety_service,
         intent_classification_service,
@@ -31,10 +16,6 @@ class ChatService:
         conversation_history,
         config,
     ):
-<<<<<<< HEAD
-        logger.info("Starting chat session", extra={
-                    "session_state": session_state})
-=======
         self.content_safety_service = content_safety_service
         self.intent_classifier = intent_classification_service
         self.support_agent = support_agent
@@ -44,50 +25,12 @@ class ChatService:
         self.conversation_history = conversation_history if conversation_history is not None else []
         self.current_agent = "SupportAgent"
         self.config = config 
->>>>>>> ec49f2d (Fix handoff workflow.)
 
     def _generate_session_state(self) -> str:
         if not self.conversation_history:
             return json.dumps({"messages": []})
         return json.dumps({"messages": self.conversation_history})
 
-<<<<<<< HEAD
-        tools = ToolRegistry().get_available_tools()
-
-        logger.info("Available tools:", extra={"tools": tools})
-
-        system_instruction = build_system_instruction(
-            user_name=USER_NAME,
-            user_role=USER_ROLE,
-            session_state=session_state,
-            grounding_results=None  # grounding_results
-        )
-
-        token_count = count_tokens(system_instruction)
-
-        if token_count > self.config["system_instruction"]["max_tokens"]:
-            logger.info(
-                f"System instruction exceeds max token limit of {self.config['system_instruction']['max_tokens']}. Truncating...")
-            system_instruction, token_count = truncate_system_instruction(
-                system_instruction
-            )
-
-        if not self.safety_service.is_text_safe(user_message_content):
-            logger.info("Blocked: User message contains unsafe content.")
-            return self.config["system_instruction"]["safe_response"]
-
-        logger.info("Content Safety Check Passed: User message is safe.")
-
-        messages = [
-            {
-                "role": "system",
-                "content": system_instruction
-            },
-            {
-                "role": "user",
-                "content": user_message
-            }
-=======
     def _looks_like_billing_request(self, user_message: str) -> bool:
         lower = user_message.lower()
         billing_keywords = [
@@ -104,7 +47,6 @@ class ChatService:
             "cancel plan",
             "billing issue",
             "payment method",
->>>>>>> ec49f2d (Fix handoff workflow.)
         ]
         return any(keyword in lower for keyword in billing_keywords)
 

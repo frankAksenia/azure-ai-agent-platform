@@ -5,7 +5,7 @@ from azure.ai.contentsafety import ContentSafetyClient
 from azure.search.documents import SearchClient
 from azure.search.documents.indexes import SearchIndexClient
 
-from core.settings import (
+from backend.app.core.settings import (
     AI_SEARCH_ENDPOINT,
     AI_SEARCH_INDEX_NAME,
     AZURE_OPENAI_ENDPOINT,

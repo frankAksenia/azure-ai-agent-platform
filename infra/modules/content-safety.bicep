@@ -1,7 +1,7 @@
 param contentSafetyName string
 param location string
 
-resource contentSafety 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
+resource contentSafety 'Microsoft.CognitiveServices/accounts@2026-07-01' = {
   name: contentSafetyName
   location: location
   identity: {

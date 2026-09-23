@@ -1,9 +1,9 @@
 import logging
 
-from core.clients import get_ai_search_client, get_ai_search_index_client
-from core.settings import AI_SEARCH_INDEX_NAME, EMBEDDING_MODEL_DEPLOYMENT_NAME
-from rag.document_loader import get_documents, upload_documents
-from rag.indexer import create_index
+from backend.app.core.clients import get_ai_search_client, get_ai_search_index_client
+from backend.app.core.settings import AI_SEARCH_INDEX_NAME, EMBEDDING_MODEL_DEPLOYMENT_NAME
+from backend.app.rag.document_loader import get_documents, upload_documents
+from backend.app.rag.indexer import create_index
 
 logger = logging.getLogger(__name__)
 

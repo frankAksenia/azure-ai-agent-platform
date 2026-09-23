@@ -27,6 +27,6 @@ class SimpleIntentResponder:
             max_output_tokens=self.config["slm"]["max_tokens"],
             temperature=self.config["slm"]["temperature"],
             top_p=self.config["slm"]["top_p"],
-            timeout=self.config["slm"]["timeout"],
-            )
+            timeout=self.config["slm"]["timeout_seconds"],
+        )
         return response.output_text

@@ -6,11 +6,11 @@ param modelVersion string
 param skuName string = 'GlobalStandard'
 param capacity int = 1
 
-resource aiFoundry 'Microsoft.CognitiveServices/accounts@2025-06-01' existing = {
+resource aiFoundry 'Microsoft.CognitiveServices/accounts@2026-07-01' existing = {
   name: aiFoundryName
 }
 
-resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2025-06-01' = {
+resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2026-07-01' = {
   parent: aiFoundry
   name: deploymentName
   sku: {

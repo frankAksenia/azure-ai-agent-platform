@@ -1,7 +1,7 @@
 param aiSearchName string
 param location string
 
-resource searchService 'Microsoft.Search/searchServices@2023-11-01' = {
+resource searchService 'Microsoft.Search/searchServices@2025-05-01' = {
   name: aiSearchName
   location: location
   sku: {
@@ -10,7 +10,7 @@ resource searchService 'Microsoft.Search/searchServices@2023-11-01' = {
   properties: {
     replicaCount: 1
     partitionCount: 1
-    hostingMode: 'default'
+    hostingMode: 'Default'
     disableLocalAuth: true
   }
 }
