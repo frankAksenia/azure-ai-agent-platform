@@ -35,8 +35,8 @@ class ExchangeRateTool:
         }
     }
 
-    def __init__(self, exchange_rate_api_url: str, api_key: str):
-        self.exchange_rate_api_url = exchange_rate_api_url
+    def __init__(self, api_url: str, api_key: str):
+        self.api_url = api_url
         self.api_key = api_key
 
     def run(self, from_currency: str, to_currency: str) -> str:
@@ -46,7 +46,7 @@ class ExchangeRateTool:
         logger.info("Running exchange rate tool", extra={
                     "from_currency": from_currency, "to_currency": to_currency},)
 
-        url = f"{self.exchange_rate_api_url}/{self.api_key}/pair/{from_currency}/{to_currency}"
+        url = f"{self.api_url}/{self.api_key}/pair/{from_currency}/{to_currency}"
 
         last_error = None
 
