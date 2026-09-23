@@ -1,24 +1,13 @@
-<<<<<<< HEAD
-=======
 import json
 
->>>>>>> ec49f2d (Fix handoff workflow.)
 from backend.app.agents.support_agent.support_agent_prompt import build_system_prompt
 
 
 class SupportAgent:
-<<<<<<< HEAD
-    def __init__(self, openai_client, llm_deployment_name: str, available_tools: list[dict] | None = None, config: dict | None = None):
-        self.openai_client = openai_client
-        self.llm_deployment_name = llm_deployment_name
-        self.available_tools = available_tools or None
-        self.max_tokens = config["llm"]["max_tokens"] 
-=======
     def __init__(self, openai_client, llm_deployment_name: str, config: dict):
         self.openai_client = openai_client
         self.llm_deployment_name = llm_deployment_name
         self.max_tokens = config["llm"]["max_tokens"]
->>>>>>> ec49f2d (Fix handoff workflow.)
         self.temperature = config["llm"]["temperature"]
         self.top_p = config["llm"]["top_p"]
 
@@ -29,24 +18,6 @@ class SupportAgent:
             additional_instructions=additional_instructions
         )
 
-<<<<<<< HEAD
-    def process_message(self, user_message: str, session_state: str | None = None) -> str:
-        system_prompt = self.get_system_prompt()
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message}
-        ]
-
-        response = self.openai_client.chat(
-            deployment_name=self.llm_deployment_name,
-            messages=messages,
-            max_tokens=self.max_tokens,
-            temperature=self.temperature,
-            top_p=self.top_p
-        )
-
-        return response    
-=======
     def get_handoff_tool(self):
         return {
             "type": "function",
@@ -103,5 +74,4 @@ class SupportAgent:
                     }
 
         return assistant_message.content, None
->>>>>>> ec49f2d (Fix handoff workflow.)
        
