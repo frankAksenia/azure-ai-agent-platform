@@ -1,6 +1,6 @@
 # Azure AI Agent Platform
 
-This project is a Python-based CLI chat application for Azure AI Foundry. It routes user requests through a lightweight intent classifier, invokes either a support or billing agent, applies Azure AI Content Safety checks, and can expose local tools for weather and currency conversion.
+This project is a Python-based CLI chat application for client-side Azure AI Foundry. It routes user requests through a lightweight intent classifier, invokes either a support or billing agent, applies Azure AI Content Safety checks, and can expose local tools for weather and currency conversion.
 
 The current implementation is an interactive local workflow rather than a web service or REST API. It is designed to be run directly from the repository root and to work with Azure-hosted model deployments and Azure AI Content Safety.
 
@@ -100,8 +100,8 @@ Create a local `.env` file or export these variables before running the app.
 
 ```bash
 export AZURE_OPENAI_ENDPOINT="https://<your-resource>.services.ai.azure.com/api/projects/<project>"
-export AZURE_OPENAI_LLM_DEPLOYMENT_NAME="gpt-4o"
-export AZURE_OPENAI_SLM_DEPLOYMENT_NAME="phi-4-mini"
+export AZURE_OPENAI_LLM_DEPLOYMENT_NAME="gpt-5.1"
+export AZURE_OPENAI_SLM_DEPLOYMENT_NAME="gpt-4.1"
 export CONTENT_SAFETY_ENDPOINT="https://<your-content-safety-resource>.cognitiveservices.azure.com"
 export USER_NAME="John Doe"
 export USER_ROLE="Customer"
